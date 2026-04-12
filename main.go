@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Eval-99/aggregator/internal/config"
 )
@@ -9,12 +10,15 @@ import (
 func main() {
 	configStruct, err := config.Read()
 	if err != nil {
-		fmt.Println("Could not read file")
-		fmt.Println(err)
+		log.Fatalf("Could not read config file: %v", err)
 		return
 	}
 
-	configStruct.SetUser("Some User")
+	err = configStruct.SetUser("Some User")
+	if err != nil {
+		log.Fatalf("Could not set username: %v", err)
+		return
+	}
 
 	fmt.Println(configStruct)
 }
