@@ -1,11 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/Eval-99/aggregator/internal/config"
+	"github.com/Eval-99/aggregator/internal/database"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -15,9 +19,17 @@ func main() {
 		return
 	}
 
-	stateStruct := state{config: &configStruct}
+	db, err := sql.Open("postgres", configStruct.DbUrl)
+	if err != nil {
+		log.Fatalf("Could not open database: %v", err)
+	}
+
+	dbQueries := database.New(db)
+
+	stateStruct := state{config: &configStruct, db: dbQueries}
 	registeredCommands := commands{commandNames: make(map[string]func(*state, command) error)}
 	registeredCommands.register("login", handlerLogin)
+	registeredCommands.register("register", handlerRegister)
 
 	args := os.Args
 	if len(args) < 2 {
