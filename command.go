@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -41,9 +40,8 @@ func (c *commands) register(name string, f func(*state, command) error) {
 
 func handlerLogin(s *state, cmd command) error {
 	if len(cmd.args) == 0 || len(cmd.args) > 1 {
-		error := errors.New("The login command expects a single argument, the username.")
+		fmt.Println("The login command expects a single argument, the username.")
 		os.Exit(1)
-		return error
 	}
 
 	ctx := context.Background()
@@ -66,9 +64,8 @@ func handlerLogin(s *state, cmd command) error {
 
 func handlerRegister(s *state, cmd command) error {
 	if len(cmd.args) == 0 || len(cmd.args) > 1 {
-		error := errors.New("The register command expects a single argument, the username.")
+		fmt.Println("The register command expects a single argument, the username.")
 		os.Exit(1)
-		return error
 	}
 
 	ctx := context.Background()
@@ -93,6 +90,38 @@ func handlerRegister(s *state, cmd command) error {
 
 	fmt.Printf("The user %s was created\n", user.Name)
 	fmt.Println(user)
+
+	return nil
+}
+
+func handlerReset(s *state, cmd command) error {
+	if len(cmd.args) != 0 {
+		fmt.Println("The reset command expects no argument.")
+		os.Exit(1)
+	}
+
+	// ctx := context.Background()
+	//
+	// _, err := s.db.GetUser(ctx, cmd.args[0])
+	// if err == nil {
+	// 	fmt.Printf("The user %s is already registered\n", cmd.args[0])
+	// 	os.Exit(1)
+	// }
+	//
+	// query := database.CreateUserParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Name: cmd.args[0]}
+	//
+	// user, err := s.db.CreateUser(ctx, query)
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// err = s.config.SetUser(user.Name)
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// fmt.Printf("The user %s was created\n", user.Name)
+	// fmt.Println(user)
 
 	return nil
 }

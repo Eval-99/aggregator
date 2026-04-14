@@ -28,8 +28,10 @@ func main() {
 
 	stateStruct := state{config: &configStruct, db: dbQueries}
 	registeredCommands := commands{commandNames: make(map[string]func(*state, command) error)}
+
 	registeredCommands.register("login", handlerLogin)
 	registeredCommands.register("register", handlerRegister)
+	registeredCommands.register("reset", handlerReset)
 
 	args := os.Args
 	if len(args) < 2 {
