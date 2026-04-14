@@ -100,28 +100,15 @@ func handlerReset(s *state, cmd command) error {
 		os.Exit(1)
 	}
 
-	// ctx := context.Background()
-	//
-	// _, err := s.db.GetUser(ctx, cmd.args[0])
-	// if err == nil {
-	// 	fmt.Printf("The user %s is already registered\n", cmd.args[0])
-	// 	os.Exit(1)
-	// }
-	//
-	// query := database.CreateUserParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Name: cmd.args[0]}
-	//
-	// user, err := s.db.CreateUser(ctx, query)
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// err = s.config.SetUser(user.Name)
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// fmt.Printf("The user %s was created\n", user.Name)
-	// fmt.Println(user)
+	ctx := context.Background()
+
+	err := s.db.ResetDB(ctx)
+	if err != nil {
+		fmt.Printf("Error deleting all users: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Success deleting all users")
 
 	return nil
 }
