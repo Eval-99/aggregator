@@ -108,7 +108,7 @@ func handlerReset(s *state, cmd command) error {
 		os.Exit(1)
 	}
 
-	fmt.Println("Success deleting all users")
+	fmt.Println("Success deleting all users and feeds")
 
 	return nil
 }
@@ -149,6 +149,28 @@ func handlerAgg(s *state, cmd command) error {
 	ctx := context.Background()
 
 	feed, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
+
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.args) == 0 || len(cmd.args) < 2 || len(cmd.args) > 2 {
+		fmt.Println("The addfeed command expects two arguments, the name and url.")
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+
+	user, _ := s.db.GetUser(ctx, s.config.CurrentUserName)
+
+	query := database.AddFeedParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Name: cmd.args[0], Url: cmd.args[1], UserID: user.ID}
+
+	feed, err := s.db.AddFeed(ctx, query)
 	if err != nil {
 		return err
 	}
