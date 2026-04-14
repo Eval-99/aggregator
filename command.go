@@ -115,7 +115,7 @@ func handlerReset(s *state, cmd command) error {
 
 func handlerUsers(s *state, cmd command) error {
 	if len(cmd.args) != 0 {
-		fmt.Println("The reset command expects no argument.")
+		fmt.Println("The users command expects no argument.")
 		os.Exit(1)
 	}
 
@@ -136,6 +136,24 @@ func handlerUsers(s *state, cmd command) error {
 		}
 		fmt.Println("* " + user.Name)
 	}
+
+	return nil
+}
+
+func handlerAgg(s *state, cmd command) error {
+	if len(cmd.args) != 0 {
+		fmt.Println("The agg command expects no argument.")
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+
+	feed, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(feed)
 
 	return nil
 }
