@@ -36,6 +36,8 @@ func main() {
 	registeredCommands.register("agg", handlerAgg)
 	registeredCommands.register("addfeed", handlerAddFeed)
 	registeredCommands.register("feeds", handlerFeeds)
+	registeredCommands.register("follow", handlerFollow)
+	registeredCommands.register("following", handlerFollowing)
 
 	args := os.Args
 	if len(args) < 2 {

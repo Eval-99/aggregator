@@ -166,11 +166,20 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	ctx := context.Background()
 
-	user, _ := s.db.GetUser(ctx, s.config.CurrentUserName)
+	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
+	if err != nil {
+		fmt.Printf("The user %s does not exist\n", cmd.args[0])
+		os.Exit(1)
+	}
 
 	query := database.AddFeedParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Name: cmd.args[0], Url: cmd.args[1], UserID: user.ID}
 
 	feed, err := s.db.AddFeed(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	err = handlerFollow(s, cmd)
 	if err != nil {
 		return err
 	}
@@ -198,6 +207,71 @@ func handlerFeeds(s *state, cmd command) error {
 		fmt.Println(feed.Name)
 		fmt.Printf(" - URL: %v\n", feed.Url)
 		fmt.Printf(" - User: %v\n", feed.Name_2)
+	}
+
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	if len(cmd.args) == 0 {
+		fmt.Println("The follow command expects a single argument, the feed URL.")
+		os.Exit(1)
+	}
+
+	var url string
+	if cmd.name == "addfeed" {
+		url = cmd.args[1]
+	} else {
+		url = cmd.args[0]
+	}
+
+	ctx := context.Background()
+
+	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
+	if err != nil {
+		fmt.Printf("The user %s does not exist\n", s.config.CurrentUserName)
+		os.Exit(1)
+	}
+	feed, err := s.db.GetFeed(ctx, url)
+	if err != nil {
+		fmt.Printf("The feed %s does not exist\n", url)
+		os.Exit(1)
+	}
+
+	query := database.CreateFeedFollowParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), UserID: user.ID, FeedID: feed.ID}
+
+	feedRow, err := s.db.CreateFeedFollow(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("User %v is now following '%v'\n", feedRow.UserName, feedRow.FeedName)
+
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	if len(cmd.args) != 0 {
+		fmt.Println("The feeds command expects no argument.")
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+
+	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
+	if err != nil {
+		fmt.Printf("The user %s does not exist\n", cmd.args[0])
+		os.Exit(1)
+	}
+
+	feedsFollowing, err := s.db.GetFeedFollowsForUser(ctx, user.ID)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	for _, follow := range feedsFollowing {
+		fmt.Printf(" - '%v'\n", follow.FeedName)
 	}
 
 	return nil
