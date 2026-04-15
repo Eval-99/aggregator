@@ -158,19 +158,13 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) == 0 || len(cmd.args) < 2 || len(cmd.args) > 2 {
 		fmt.Println("The addfeed command expects two arguments, the name and url.")
 		os.Exit(1)
 	}
 
 	ctx := context.Background()
-
-	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
-	if err != nil {
-		fmt.Printf("The user %s does not exist\n", cmd.args[0])
-		os.Exit(1)
-	}
 
 	query := database.AddFeedParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Name: cmd.args[0], Url: cmd.args[1], UserID: user.ID}
 
@@ -179,7 +173,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		return err
 	}
 
-	err = handlerFollow(s, cmd)
+	err = handlerFollow(s, cmd, user)
 	if err != nil {
 		return err
 	}
@@ -212,7 +206,7 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.args) == 0 {
 		fmt.Println("The follow command expects a single argument, the feed URL.")
 		os.Exit(1)
@@ -227,11 +221,6 @@ func handlerFollow(s *state, cmd command) error {
 
 	ctx := context.Background()
 
-	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
-	if err != nil {
-		fmt.Printf("The user %s does not exist\n", s.config.CurrentUserName)
-		os.Exit(1)
-	}
 	feed, err := s.db.GetFeed(ctx, url)
 	if err != nil {
 		fmt.Printf("The feed %s does not exist\n", url)
@@ -250,19 +239,13 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
+func handlerFollowing(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 0 {
 		fmt.Println("The feeds command expects no argument.")
 		os.Exit(1)
 	}
 
 	ctx := context.Background()
-
-	user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
-	if err != nil {
-		fmt.Printf("The user %s does not exist\n", cmd.args[0])
-		os.Exit(1)
-	}
 
 	feedsFollowing, err := s.db.GetFeedFollowsForUser(ctx, user.ID)
 	if err != nil {
@@ -275,4 +258,16 @@ func handlerFollowing(s *state, cmd command) error {
 	}
 
 	return nil
+}
+
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		ctx := context.Background()
+		user, err := s.db.GetUser(ctx, s.config.CurrentUserName)
+		if err != nil {
+			fmt.Printf("The user %s does not exist\n", s.config.CurrentUserName)
+			os.Exit(1)
+		}
+		return handler(s, cmd, user)
+	}
 }
