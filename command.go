@@ -141,21 +141,25 @@ func handlerUsers(s *state, cmd command) error {
 }
 
 func handlerAgg(s *state, cmd command) error {
-	if len(cmd.args) != 0 {
-		fmt.Println("The agg command expects no argument.")
+	if len(cmd.args) == 0 || len(cmd.args) > 1 {
+		fmt.Println("The agg command expects a single argument, the durantion.")
 		os.Exit(1)
 	}
 
-	ctx := context.Background()
-
-	feed, err := fetchFeed(ctx, "https://www.wagslane.dev/index.xml")
+	time_parsed, err := time.ParseDuration(cmd.args[0])
 	if err != nil {
+		fmt.Println("Time string incorrectly formatted.")
 		return err
 	}
 
-	fmt.Println(feed)
+	time_between_reqs := time.Duration(time_parsed)
 
-	return nil
+	fmt.Printf("Collecting feeds every %s\n", cmd.args[0])
+	ctx := context.Background()
+	ticker := time.NewTicker(time_between_reqs)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s, ctx)
+	}
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
@@ -282,6 +286,27 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	}
 
 	fmt.Printf("Unfollowed feed '%v'\n", feed.Name)
+
+	return nil
+}
+
+func scrapeFeeds(s *state, ctx context.Context) error {
+	feed, err := s.db.GetNextFeedToFetch(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.MarkFeedFetched(ctx, database.MarkFeedFetchedParams{ID: feed.ID, UpdatedAt: time.Now()})
+	if err != nil {
+		return err
+	}
+
+	res, err := fetchFeed(ctx, feed.Url)
+
+	fmt.Printf("Channel: %v\n", res.Channel.Title)
+	for _, item := range res.Channel.Item {
+		fmt.Printf(" - %v\n", item.Title)
+	}
 
 	return nil
 }
