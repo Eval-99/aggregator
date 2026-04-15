@@ -241,7 +241,7 @@ func handlerFollow(s *state, cmd command, user database.User) error {
 
 func handlerFollowing(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 0 {
-		fmt.Println("The feeds command expects no argument.")
+		fmt.Println("The following command expects no argument.")
 		os.Exit(1)
 	}
 
@@ -256,6 +256,32 @@ func handlerFollowing(s *state, cmd command, user database.User) error {
 	for _, follow := range feedsFollowing {
 		fmt.Printf(" - '%v'\n", follow.FeedName)
 	}
+
+	return nil
+}
+
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	if len(cmd.args) == 0 {
+		fmt.Println("The unfollow command expects a single argument, the feed URL.")
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+
+	feed, err := s.db.GetFeed(ctx, cmd.args[0])
+	if err != nil {
+		fmt.Printf("The feed %s does not exist\n", cmd.args[0])
+		os.Exit(1)
+	}
+
+	query := database.DeleteFollowFeedParams{UserID: user.ID, FeedID: feed.ID}
+
+	err = s.db.DeleteFollowFeed(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Unfollowed feed '%v'\n", feed.Name)
 
 	return nil
 }
