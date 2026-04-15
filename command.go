@@ -179,3 +179,26 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	return nil
 }
+
+func handlerFeeds(s *state, cmd command) error {
+	if len(cmd.args) != 0 {
+		fmt.Println("The feeds command expects no argument.")
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+
+	feeds, err := s.db.AllFeeds(ctx)
+	if err != nil {
+		fmt.Printf("Error fetching all feeds: %v\n", err)
+		os.Exit(1)
+	}
+
+	for _, feed := range feeds {
+		fmt.Println(feed.Name)
+		fmt.Printf(" - URL: %v\n", feed.Url)
+		fmt.Printf(" - User: %v\n", feed.Name_2)
+	}
+
+	return nil
+}
