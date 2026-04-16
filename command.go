@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Eval-99/aggregator/internal/config"
@@ -290,6 +291,43 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	return nil
 }
 
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	if len(cmd.args) > 1 {
+		fmt.Println("The browse command expects zero or a single argument, the amount of posts.")
+		os.Exit(1)
+	}
+
+	var amount int32
+	if len(cmd.args) == 1 {
+		res, err := strconv.Atoi(cmd.args[0])
+		amount = int32(res)
+		if err != nil {
+			fmt.Println("Argument not a number")
+			os.Exit(1)
+		}
+	} else if len(cmd.args) == 0 {
+		amount = 2
+	}
+
+	ctx := context.Background()
+	query := database.GetPostsForUserParams{UserID: user.ID, Limit: amount}
+	posts, err := s.db.GetPostsForUser(ctx, query)
+	if err != nil {
+		fmt.Println("Could not get user posts")
+		os.Exit(1)
+	}
+
+	for _, post := range posts {
+		fmt.Printf("%s from %s\n", post.PublishedAt.Format("Mon Jan 2"), post.FeedName)
+		fmt.Printf("--- %s ---\n", post.Title)
+		fmt.Printf("    %v\n", post.Description)
+		fmt.Printf("Link: %s\n", post.Url)
+		fmt.Println("=====================================")
+	}
+
+	return nil
+}
+
 func scrapeFeeds(s *state, ctx context.Context) error {
 	feed, err := s.db.GetNextFeedToFetch(ctx)
 	if err != nil {
@@ -303,9 +341,11 @@ func scrapeFeeds(s *state, ctx context.Context) error {
 
 	res, err := fetchFeed(ctx, feed.Url)
 
-	fmt.Printf("Channel: %v\n", res.Channel.Title)
+	fmt.Printf("'%v' has been updated\n", res.Channel.Title)
 	for _, item := range res.Channel.Item {
-		fmt.Printf(" - %v\n", item.Title)
+		pubTime, _ := time.Parse("Sun, 08 Jan 2023 00:00:00 +0000", item.PubDate)
+		query := database.CreatePostParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Title: item.Title, Url: item.Link, Description: item.Description, PublishedAt: pubTime, FeedID: feed.ID}
+		s.db.CreatePost(ctx, query)
 	}
 
 	return nil
